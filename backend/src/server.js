@@ -9,13 +9,15 @@ const workerStarter = require("./worker");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: true,          // reflect request origin
-    credentials: true,     // allow credentials if needed
-  })
-);
-app.options("*", cors());
+const corsOptions = {
+  origin: ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:5000', 'https://file-analyzer-frontend.onrender.com'], // front-end dev & optional same-origin
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // preflight handler
 
 app.use(express.json());
 
