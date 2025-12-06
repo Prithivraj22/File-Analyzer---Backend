@@ -6,33 +6,48 @@ const uploadRouter = require("./routes/upload");
 const dashboardRouter = require("./routes/dashboard");
 const previewRouter = require("./routes/preview");
 const analyzeRouter = require("./routes/analyze");
-const workerStarter = require("./worker"); // starts worker when required
+const workerStarter = require("./worker");
 
 const app = express();
 
-// MIDDLEWARE — apply CORS before any route registration
+// FRONTEND ORIGINS (local + deployed)
+const allowedOrigins = [
+  "http://localhost:3001",                 // React dev
+  "http://localhost:3000",                 // optional
+  "http://localhost:5000",                 // optional
+  process.env.FRONTEND_ORIGIN              // e.g. https://file-analyzer-frontend.onrender.com
+].filter(Boolean);
+
 const corsOptions = {
-  origin: ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:5000'], // front-end dev & optional same-origin
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
+  origin(origin, callback) {
+    // allow non-browser / curl (no origin) and allowed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.log("CORS blocked origin:", origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
   optionsSuccessStatus: 200
 };
-app.use(cors());
-app.options('*', cors(corsOptions)); // preflight handler
 
-app.use(express.json()); // JSON body parser (keep after CORS but before routes)
+// apply CORS BEFORE routes
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
-// ROUTES (mount routers)
-app.use("/upload", uploadRouter);          // POST /upload
-app.use("/api", dashboardRouter);          // /api/*
-app.use("/preview", previewRouter);        // POST /preview  (router should use router.post('/', ...))
-app.use("/analyze", analyzeRouter);        // POST /analyze
+app.use(express.json());
 
-// health
+// ROUTES
+app.use("/upload", uploadRouter);
+app.use("/api", dashboardRouter);
+app.use("/preview", previewRouter);
+app.use("/analyze", analyzeRouter);
+
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`);
+  console.log(Server listening on ${PORT});
 });
