@@ -1,6 +1,6 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs").promises;
+const fs = require("fs");
 const path = require("path");
 const { parseLogFile } = require("../services/parser");
 const { computeFileHash } = require("../services/fingerprint");
