@@ -1,37 +1,33 @@
+// backend/src/routes/preview.js
 const express = require("express");
-const multer = require("multer");
-const fs = require("fs");
 const router = express.Router();
 
 const { parseLogFile } = require("../services/parser");
 const { redact } = require("../services/redactor");
 
-const upload = multer({ dest: "uploads/" });
-
-router.post("/", upload.single("file"), async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "no_file_uploaded" });
+    const { text, filename } = req.body || {};
 
-    const content = fs.readFileSync(req.file.path, "utf8");
-    fs.unlinkSync(req.file.path); // delete temp file
+    if (!text) {
+      return res.status(400).json({ error: "no_text_provided" });
+    }
 
-    // Parse errors
-    const errors = parseLogFile(content);
+    const errors = parseLogFile(text);
 
-    // Redact each error
-    const redactedErrors = errors.map(err => ({
+    const redactedErrors = errors.map((err) => ({
       line_number: err.line_number,
       raw_text: err.raw_text,
-      redacted_text: redact(err.raw_text)
+      redacted_text: redact(err.raw_text),
     }));
 
     return res.json({
+      filename: filename || null,
       totalErrors: redactedErrors.length,
-      errors: redactedErrors
+      errors: redactedErrors,
     });
-
   } catch (err) {
-    console.error(err);
+    console.error("Preview route error:", err);
     return res.status(500).json({ error: "server_error" });
   }
 });
