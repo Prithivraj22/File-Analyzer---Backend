@@ -1,10 +1,12 @@
-// backend/src/routes/preview.js
+// src/routes/preview.js
 const express = require("express");
 const router = express.Router();
 
 const { parseLogFile } = require("../services/parser");
 const { redact } = require("../services/redactor");
 
+// POST /preview
+// body: { filename?: string, text: string }
 router.post("/", async (req, res) => {
   try {
     const { text, filename } = req.body || {};
@@ -13,8 +15,10 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "no_text_provided" });
     }
 
-    const errors = parseLogFile(text);
+    // Parse log lines into errors
+    const errors = parseLogFile(text); // [{ line_number, raw_text }]
 
+    // Redact sensitive info
     const redactedErrors = errors.map((err) => ({
       line_number: err.line_number,
       raw_text: err.raw_text,
