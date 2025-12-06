@@ -10,32 +10,20 @@ const workerStarter = require("./worker");
 
 const app = express();
 
-// FRONTEND ORIGINS (local + deployed)
-const allowedOrigins = [
-  "http://localhost:3001",                 // React dev
-  "http://localhost:3000",                 // optional
-  "http://localhost:5000",                 // optional
-  process.env.FRONTEND_ORIGIN              // e.g. https://file-analyzer-frontend.onrender.com
-].filter(Boolean);
-
-const corsOptions = {
-  origin(origin, callback) {
-    // allow non-browser / curl (no origin) and allowed origins
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    console.log("CORS blocked origin:", origin);
-    return callback(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
-// apply CORS BEFORE routes
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+/**
+ * CORS – allow any origin (for dev + Render), but reflect the actual origin
+ * This will make the backend send:
+ *   Access-Control-Allow-Origin: <request origin>
+ *   Access-Control-Allow-Credentials: true
+ */
+app.use(
+  cors({
+    origin: true,          // reflect request origin
+    credentials: true,     // allow cookies/credentials if needed
+  })
+);
+// handle preflight
+app.options("*", cors());
 
 app.use(express.json());
 
@@ -45,6 +33,7 @@ app.use("/api", dashboardRouter);
 app.use("/preview", previewRouter);
 app.use("/analyze", analyzeRouter);
 
+// health
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 const PORT = process.env.PORT || 3000;
