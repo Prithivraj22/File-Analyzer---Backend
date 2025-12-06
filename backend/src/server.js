@@ -18,7 +18,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200
 };
-app.use(cors(corsOptions));
+app.use(cors());
 app.options('*', cors(corsOptions)); // preflight handler
 
 app.use(express.json()); // JSON body parser (keep after CORS but before routes)
