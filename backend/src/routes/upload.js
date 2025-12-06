@@ -8,7 +8,14 @@ const { pool } = require("../db");
 const { enqueueError } = require("../queue");
 
 const router = express.Router();
-const upload = multer({ dest: path.join(__dirname,"..","..","uploads"), limits: { fileSize: 5 * 1024 * 1024 } });
+const uploadDir = path.resolve(__dirname, "../../uploads");
+
+// Make sure directory exists
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const upload = multer({
+  dest: uploadDir,
+});
 
 router.post("/", upload.single("file"), async (req, res) => {
   const file = req.file;
