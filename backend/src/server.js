@@ -1,3 +1,4 @@
+// src/server.js
 const express = require("express");
 const cors = require("cors");
 
@@ -5,29 +6,44 @@ const uploadRouter = require("./routes/upload");
 const dashboardRouter = require("./routes/dashboard");
 const previewRouter = require("./routes/preview");
 const analyzeRouter = require("./routes/analyze");
-const workerStarter = require("./worker");
+const workerStarter = require("./worker"); // if you still use it
 
 const app = express();
 
-const corsOptions = {
-  origin: ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:5000', 'https://file-analyzer-frontend.onrender.com'], // front-end dev & optional same-origin
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // preflight handler
+// ---------- CORS ----------
+const allowedOrigins = [
+  "https://file-analyzer-frontend.onrender.com", // your deployed frontend
+  "http://localhost:5000",
+  "http://localhost:3000",
+];
 
+const corsOptions = {
+  origin: (origin, cb) => {
+    // allow server-to-server / curl (no origin) and our known frontends
+    if (!origin || allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+    return cb(null, false);
+  },
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // handle preflight
+
+// ---------- Body parser ----------
 app.use(express.json());
 
+// ---------- Routes ----------
 app.use("/upload", uploadRouter);
 app.use("/api", dashboardRouter);
-app.use("/preview", previewRouter);
-app.use("/analyze", analyzeRouter);
+app.use("/preview", previewRouter); // POST /preview
+app.use("/analyze", analyzeRouter); // POST /analyze
 
+// Health check
 app.get("/health", (req, res) => res.json({ status: "ok" }));
-app.get("/healthz", (req, res) => res.json({ status: "okiiiiiiiiii" }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
